@@ -18,7 +18,11 @@ if [ "$TLS" = 1 ]; then
   kubectl wait --for=condition=Ready certificate/mission-tls -n infra --timeout=120s
   kubectl apply -f ci/gateway-tls.yaml
 fi
-kubectl wait --for=condition=Programmed gateway/mission -n infra --timeout=180s
+kubectl wait --for=condition=Accepted gateway/mission -n infra --timeout=180s
+for i in $(seq 30); do kubectl get deployment -n envoy-gateway-system -l gateway.envoyproxy.io/owning-gateway-name=mission -o name | grep -q . && break; sleep 5; done
+kubectl wait --for=condition=Available deployment -n envoy-gateway-system -l gateway.envoyproxy.io/owning-gateway-name=mission --timeout=180s
+echo "Gateway conditions:"
+kubectl get gateway mission -n infra -o jsonpath='{range .status.conditions[*]}{.type}={.status} {.reason}: {.message}{"\n"}{end}'
 helm install stable charts/maright-app -n app -f "$VALUES" --wait --timeout 4m
 GWSVC=$(kubectl get svc -n envoy-gateway-system -l gateway.envoyproxy.io/owning-gateway-name=mission,gateway.envoyproxy.io/owning-gateway-namespace=infra -o jsonpath='{.items[0].metadata.name}')
 echo "GWSVC=$GWSVC" >> "$GITHUB_ENV"
