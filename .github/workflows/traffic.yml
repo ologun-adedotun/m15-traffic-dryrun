@@ -1,0 +1,40 @@
+name: Traffic and resilience
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  traffic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7
+      - uses: azure/setup-helm@v5
+        with:
+          version: v4.3.0
+      - uses: helm/kind-action@v1
+      - name: Set up the platform and the app
+        run: TLS=1 bash ci/setup.sh
+      - name: Traffic experiments
+        run: bash ci/traffic.sh
+
+  resilience:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - uses: azure/setup-helm@v5
+        with:
+          version: v4.3.0
+      - uses: helm/kind-action@v1
+        with:
+          config: ci/kind-3.yaml
+      - name: Set up the platform and the app
+        run: bash ci/setup.sh
+      - name: Resilience experiments
+        run: |
+          helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/
+          bash ci/resilience.sh
