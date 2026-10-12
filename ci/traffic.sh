@@ -163,3 +163,23 @@ sleep 8
 kubectl get httproute xns -n infra -o jsonpath='{range .status.parents[*].conditions[*]}{.type}={.status} {.reason}{"\n"}{end}'
 curl -s -o /dev/null -w "with a ReferenceGrant: %{http_code}\n" -H 'Host: xns.mission.local' http://127.0.0.1:8081/
 kill $PF
+
+H "9. Programmed on kind: give the proxy a ClusterIP Service"
+cat <<'EOF' | kubectl apply -f -
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyProxy
+metadata:
+  name: clusterip
+  namespace: envoy-gateway-system
+spec:
+  provider:
+    type: Kubernetes
+    kubernetes:
+      envoyService:
+        type: ClusterIP
+EOF
+kubectl patch gatewayclass eg --type merge -p '{"spec":{"parametersRef":{"group":"gateway.envoyproxy.io","kind":"EnvoyProxy","name":"clusterip","namespace":"envoy-gateway-system"}}}'
+sleep 20
+kubectl get gateway mission -n infra -o jsonpath='{range .status.conditions[*]}{.type}={.status} {.reason}{"\n"}{end}'
+kubectl get gateway mission -n infra -o jsonpath='{.status.addresses}'; echo
+kubectl get svc -n envoy-gateway-system -l gateway.envoyproxy.io/owning-gateway-name=mission -o custom-columns=NAME:.metadata.name,TYPE:.spec.type --no-headers
