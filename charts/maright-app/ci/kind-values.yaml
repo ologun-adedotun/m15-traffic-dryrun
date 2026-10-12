@@ -1,0 +1,15 @@
+image:
+  repository: maright-app
+  tag: v2
+  pullPolicy: IfNotPresent
+networkPolicy:
+  enabled: true
+  allowFromNamespaces:
+    - envoy-gateway-system
+route:
+  enabled: true
+  hostnames:
+    - mission.local
+  gateway:
+    name: mission
+    namespace: infra
