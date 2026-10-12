@@ -1,0 +1,31 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: mission
+  namespace: infra
+spec:
+  gatewayClassName: eg
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+      allowedRoutes:
+        namespaces:
+          from: Selector
+          selector:
+            matchLabels:
+              mission-routes: allowed
+    - name: https
+      protocol: HTTPS
+      port: 443
+      hostname: mission.local
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - name: mission-tls
+      allowedRoutes:
+        namespaces:
+          from: Selector
+          selector:
+            matchLabels:
+              mission-routes: allowed
